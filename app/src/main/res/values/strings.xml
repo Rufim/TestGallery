@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">TestGallery</string>
+    <string name="logo_start">Начать</string>
+    <string name="common_exit">Выйти</string>
+    <string name="error">Error occurred!</string>
+    <string name="gallery_name">File name:</string>
+    <string name="gallery_size">Size(Mb):</string>
+    <string name="gallery_md5">Md5:</string>
+</resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <View   android:id="@+id/logo_view_center"
+            android:layout_width="wrap_content"
+              android:layout_height="1dp"
+              android:layout_centerInParent="true"/>
+    <LinearLayout android:layout_width="@dimen/button_size"
+                  android:orientation="vertical"
+                  android:layout_centerHorizontal="true"
+                  android:layout_below="@+id/logo_view_center"
+                  android:layout_marginTop="@dimen/spacing_xlarge"
+                  android:layout_height="wrap_content">
+        <Button
+                android:text="@string/logo_start"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/spacing_medium"
+                android:id="@+id/logo_start"/>
+        <Button
+                android:text="@string/common_exit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/logo_exit"/>
+    </LinearLayout>
+
+
+</RelativeLayout>
