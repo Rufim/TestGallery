@@ -1,5 +1,6 @@
 package ru.kazantsev.gallery.fragment;
 
+import android.Manifest;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +9,7 @@ import android.widget.Button;
 import butterknife.BindView;
 import butterknife.OnClick;
 import ru.kazantsev.gallery.R;
+import ru.kazantsev.template.activity.BaseActivity;
 import ru.kazantsev.template.fragments.BaseFragment;
 
 
@@ -33,7 +35,14 @@ public class LogoFragment extends BaseFragment {
 
     @OnClick(R.id.logo_start)
     public void onClickStart(View v) {
-        GalleryFragment.show(this);
+        getBaseActivity().doActionWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new BaseActivity.PermissionAction() {
+            @Override
+            public void doAction(boolean b) {
+                if(b){
+                    GalleryFragment.show(LogoFragment.this);
+                }
+            }
+        });
     }
 
     @OnClick(R.id.logo_exit)

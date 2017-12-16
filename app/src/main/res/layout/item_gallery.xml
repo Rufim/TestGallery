@@ -24,7 +24,7 @@
             <ImageView
                 android:id="@+id/item_gallery_image"
                 android:layout_width="match_parent"
-                android:scaleType="centerInside"
+                android:scaleType="fitCenter"
                 android:layout_height="150dp"
                 android:src="@drawable/thumb" />
 

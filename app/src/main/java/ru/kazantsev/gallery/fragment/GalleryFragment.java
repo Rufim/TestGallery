@@ -99,9 +99,10 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
         if (timer != null) timer.cancel();
         timer = new Timer();
         updateList = new UpdateList();
-        if(observer == null) observer = new ImageObserver(getActivity().getContentResolver(), this);
+        if (observer == null)
+            observer = new ImageObserver(getActivity().getContentResolver(), this);
         task = new BufferUpdate(task == null ? observer.listImages() : task.initialImages);
-        timer.scheduleAtFixedRate(task, 0, 15000);
+        timer.scheduleAtFixedRate(task, 0, 10000);
     }
 
     @Override
@@ -284,30 +285,34 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
                         loadMoreBar.setVisibility(View.VISIBLE);
                         swipeRefresh.setRefreshing(false);
                     });
-                } else if(!scanning) {
+                } else if (!scanning) {
                     scanning = true;
                     final ArrayList<String> paths = new ArrayList<>();
-                    ArrayList<String> delete = new ArrayList<>(initialImages);
+                    ArrayList<String> delete = new ArrayList<>();
                     TreeSet<File> fileTree = new TreeSet<>();
                     for (File dir : dirsToScan) {
                         SystemUtils.listFilesRecursive(dir, fileTree);
                     }
                     for (File file : fileTree) {
-                        if(!initialImages.contains(file.getAbsolutePath())) {
+                        if (!initialImages.contains(file.getAbsolutePath())) {
                             paths.add(file.getAbsolutePath());
                         }
-                        delete.remove(file.getAbsolutePath());
                     }
-                    if(!delete.isEmpty()) {
-                        paths.addAll(delete);
+                    Iterator<String> it = initialImages.iterator();
+                    while (it.hasNext()) {
+                        String path = it.next();
+                        if (!new File(path).exists()) {
+                            delete.add(path);
+                        }
                     }
-                    if(!paths.isEmpty()) {
-                        if(connection == null) {
+                    paths.addAll(delete);
+                    if (!paths.isEmpty()) {
+                        if (connection == null) {
                             connection = new MediaScannerConnection(getContext(), new MediaScannerConnection.MediaScannerConnectionClient() {
                                 @Override
                                 public void onMediaScannerConnected() {
                                     synchronized (paths) {
-                                       scanPaths(paths);
+                                        scanPaths(paths);
                                     }
                                 }
 
@@ -369,7 +374,7 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
                     it.remove();
                 }
             }
-            if(!triggered) {
+            if (!triggered) {
                 scanning = false;
             }
         }
@@ -383,27 +388,28 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
         updateList.sendMessage(message);
     }
 
-public class UpdateList extends Handler {
-    public void handleMessage(Message msg) {
-        if (updateList == this) {
-            ImageItem item = (ImageItem) msg.getData().getSerializable(MESSAGE);
-            if(item != null) adapter.addItem((ImageItem) msg.getData().getSerializable(MESSAGE));
-            added++;
-            loadMoreBar.setProgress((added * 100) / allSize);
-            if (allSize <= added) {
-                loadMoreBar.setVisibility(View.GONE);
+    public class UpdateList extends Handler {
+        public void handleMessage(Message msg) {
+            if (updateList == this) {
+                ImageItem item = (ImageItem) msg.getData().getSerializable(MESSAGE);
+                if (item != null)
+                    adapter.addItem((ImageItem) msg.getData().getSerializable(MESSAGE));
+                added++;
+                loadMoreBar.setProgress((added * 100) / allSize);
+                if (allSize <= added) {
+                    loadMoreBar.setVisibility(View.GONE);
+                }
+            } else {
+                addItem((ImageItem) msg.getData().getSerializable(MESSAGE));
             }
-        } else {
-            addItem((ImageItem) msg.getData().getSerializable(MESSAGE));
         }
     }
-}
 
-public static class ImageItem implements Serializable {
-    String name;
-    String md5;
-    String size;
-    String path;
-    String thrumbnailPath;
-}
+    public static class ImageItem implements Serializable {
+        String name;
+        String md5;
+        String size;
+        String path;
+        String thrumbnailPath;
+    }
 }
