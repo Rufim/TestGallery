@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.MediaScannerConnection;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
@@ -145,13 +147,17 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
 
     @Override
     public void refreshData(boolean showProgress) {
-        synchronized (buffer) {
-            addAll = true;
-            hasNew = false;
-            buffer.clear();
-            adapter.clear();
-            adapter.notifyChanged();
-            onResume();
+        if(buffer.isEmpty()) {
+            synchronized (buffer) {
+                addAll = true;
+                hasNew = false;
+                buffer.clear();
+                adapter.clear();
+                adapter.notifyChanged();
+                onResume();
+            }
+        } else {
+            swipeRefresh.setRefreshing(false);
         }
     }
 
@@ -165,28 +171,38 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
                 item.name = !name.contains(".") ? name : name.substring(0, name.lastIndexOf("."));
                 item.size = String.format("%.3f", (((double) image.length() / 1024) / 1024));
                 item.path = image.getAbsolutePath();
-                Bitmap source = BitmapFactory.decodeFile(item.path);
-                int viewHeight = GuiUtils.dpToPx(150, getContext());
-                float scale = (float) viewHeight / source.getHeight();
-                Bitmap thumb = ThumbnailUtils.extractThumbnail(source, (int) (source.getWidth() * scale), viewHeight);
-                source.recycle();
-                File cache = getContext().getCacheDir();
-                if (cache.canWrite()) {
-                    File thumbFile = new File(cache, name + ".PNG");
-                    FileOutputStream outputStream = null;
-                    try {
-                        outputStream = new FileOutputStream(thumbFile);
-                        thumb.compress(Bitmap.CompressFormat.PNG, 90, outputStream);
-                    } finally {
-                        SystemUtils.close(outputStream);
+                Bitmap existDefault = observer.getThumbnail(path);
+                if(existDefault == null) {
+                    Bitmap thumb = generateThrumbnail(item.path);
+                    File cache = getContext().getCacheDir();
+                    if (cache.canWrite()) {
+                        File thumbFile = new File(cache, name + ".PNG");
+                        FileOutputStream outputStream = null;
+                        try {
+                            outputStream = new FileOutputStream(thumbFile);
+                            thumb.compress(Bitmap.CompressFormat.PNG, 90, outputStream);
+                        } finally {
+                            SystemUtils.close(outputStream);
+                        }
+                        item.thrumbnailPath = thumbFile.getAbsolutePath();
                     }
-                    item.thrumbnailPath = thumbFile.getAbsolutePath();
+                    thumb.recycle();
+                } else {
+                    existDefault.recycle();
                 }
-                thumb.recycle();
                 return item;
             }
         }
         return null;
+    }
+
+    private Bitmap generateThrumbnail(String path) {
+        Bitmap source = BitmapFactory.decodeFile(path);
+        int viewHeight = GuiUtils.dpToPx(150, getContext());
+        float scale = (float) viewHeight / source.getHeight();
+        Bitmap thrumb = ThumbnailUtils.extractThumbnail(source, (int) (source.getWidth() * scale), viewHeight);
+        source.recycle();
+        return thrumb;
     }
 
     @Override
@@ -207,8 +223,16 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
             GuiUtils.setText(root, R.id.item_gallery_md5, item.md5);
             GuiUtils.setText(root, R.id.item_gallery_size, item.size);
             ImageView imageView = GuiUtils.getView(root, R.id.item_gallery_image);
-            if (item.thrumbnailPath != null)
-                imageView.setImageURI(Uri.parse(item.thrumbnailPath));
+            if(item.thrumbnailPath != null) {
+                File thrumb = new File(item.thrumbnailPath);
+                if(thrumb.exists()) {
+                    imageView.setImageBitmap(BitmapFactory.decodeFile(item.thrumbnailPath));
+                } else {
+                    imageView.setImageBitmap(generateThrumbnail(item.thrumbnailPath));
+                }
+            } else {
+                imageView.setImageBitmap(observer.getThumbnail(item.path));
+            }
         }
     }
 
@@ -332,6 +356,8 @@ public class GalleryFragment extends ListFragment<GalleryFragment.ImageItem> imp
                                 scanPaths(paths);
                             }
                         }
+                    } else {
+                        scanning = false;
                     }
                 }
                 if (!buffer.isEmpty()) {

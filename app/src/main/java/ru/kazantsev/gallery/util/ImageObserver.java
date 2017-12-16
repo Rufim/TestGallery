@@ -1,15 +1,16 @@
 package ru.kazantsev.gallery.util;
 
-import android.app.Activity;
 import android.content.ContentResolver;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Handler;
 import android.provider.MediaStore;
 
 import java.util.ArrayList;
-import java.util.List;
+
+import ru.kazantsev.template.util.SystemUtils;
 
 /**
  * Created by Admin on 13.12.2017.
@@ -20,8 +21,21 @@ public class ImageObserver {
     private final ContentObserver contentObserver;
     private final ContentResolver resolver;
     private String[] projection = {MediaStore.MediaColumns.DATA};
-    private Uri imageUriContent = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+    private Uri IMAGE_URI_CONTENT = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
     private boolean running = true;
+
+    public Bitmap getThumbnail(String path) {
+        Cursor ca = resolver.query(IMAGE_URI_CONTENT, new String[] { MediaStore.MediaColumns._ID }, MediaStore.MediaColumns.DATA + "=?", new String[] {path}, null);
+        Bitmap thumb = null;
+        if (ca != null && ca.moveToFirst()) {
+            int id = ca.getInt(ca.getColumnIndex(MediaStore.MediaColumns._ID));
+            SystemUtils.close(ca);
+            thumb = MediaStore.Images.Thumbnails.getThumbnail(resolver, id, MediaStore.Images.Thumbnails.MICRO_KIND, null );
+        }
+        SystemUtils.close(ca);
+        return thumb;
+    }
+
 
     private class ObserverWithListener extends ContentObserver {
         private final OnChangeListener mListener;
@@ -46,7 +60,7 @@ public class ImageObserver {
         ArrayList<String> listOfAllImages = new ArrayList<String>();
         String absolutePathOfImage = null;
 
-        cursor = resolver.query(imageUriContent, projection, null,
+        cursor = resolver.query(IMAGE_URI_CONTENT, projection, null,
                 null, null);
 
         column_index_data = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
@@ -60,7 +74,7 @@ public class ImageObserver {
 
     public ImageObserver(ContentResolver resolver, final OnChangeListener listener) {
         this.resolver = resolver;
-        cursor = resolver.query(imageUriContent, projection, null,
+        cursor = resolver.query(IMAGE_URI_CONTENT, projection, null,
                 null, null);
         contentObserver = new ObserverWithListener(listener);
         cursor.registerContentObserver(contentObserver);
